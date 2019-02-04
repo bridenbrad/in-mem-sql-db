@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">	
+
+	<bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="location">
+			<value>transformer/tirion-db.properties</value>
+		</property>
+	</bean>
+
+	<bean id="runtime" class="com.tirion.common.runtime.SimpleRuntime">
+		<constructor-arg>
+			<null/>
+		</constructor-arg>
+		<constructor-arg>
+			<ref bean="compressor"/>
+		</constructor-arg>
+		<constructor-arg>
+			<ref bean="executor"/>
+		</constructor-arg>
+		<constructor-arg>
+			<ref bean="jobFactory"/>
+		</constructor-arg>
+		<constructor-arg>
+			<ref bean="pool"/>
+		</constructor-arg>
+	</bean>	
+	
+	<bean id="compressor" class="com.tirion.compressor.SnappyCompressor" init-method="init" destroy-method="shutdown">
+		<property name="goodCompressionRatio" value="${compressor.good.compression.ratio}" />
+	</bean>		
+	
+	<bean id="executor" class="com.tirion.executor.SimpleExecutor" init-method="init" destroy-method="shutdown">
+		<property name="poolScaleFactor" value="${thread.pool.scale.factor}" />
+	</bean>	
+	
+	<bean id="jobFactory" class="com.tirion.executor.job.SimpleJobFactory" init-method="init" destroy-method="shutdown">
+	</bean>	
+
+	<bean id="pool" class="com.tirion.pool.SimplePool" init-method="init" destroy-method="shutdown">
+	</bean>
+	
+	<bean id="allocator" class="com.tirion.db.store.allocator.memory.DirectHeapStoragePool" init-method="init" destroy-method="shutdown">
+	</bean>
+	
+	<bean id="store" class="com.tirion.db.store.InMemoryStore" init-method="init" destroy-method="shutdown">
+		<property name="runtime" ref="runtime" />
+	</bean>
+</beans>
+

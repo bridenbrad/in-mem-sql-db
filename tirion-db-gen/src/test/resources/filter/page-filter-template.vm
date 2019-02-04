@@ -1,0 +1,300 @@
+package com.tirion.db.sql.exec.operator.physical.scan.filter.page;
+
+import java.nio.ByteBuffer;
+import java.util.List;
+import java.util.Set;
+
+import com.tirion.db.sql.exec.operator.physical.scan.filter.array.${largeTypeName}ArrayFilter.${largeTypeName}BetweenArrayFilter;
+import com.tirion.db.sql.exec.operator.physical.scan.filter.array.${largeTypeName}ArrayFilter.${largeTypeName}EqArrayFilter;
+import com.tirion.db.sql.exec.operator.physical.scan.filter.array.${largeTypeName}ArrayFilter.${largeTypeName}GtArrayFilter;
+import com.tirion.db.sql.exec.operator.physical.scan.filter.array.${largeTypeName}ArrayFilter.${largeTypeName}GtEqArrayFilter;
+import com.tirion.db.sql.exec.operator.physical.scan.filter.array.${largeTypeName}ArrayFilter.${largeTypeName}InArrayFilter;
+import com.tirion.db.sql.exec.operator.physical.scan.filter.array.${largeTypeName}ArrayFilter.${largeTypeName}LtArrayFilter;
+import com.tirion.db.sql.exec.operator.physical.scan.filter.array.${largeTypeName}ArrayFilter.${largeTypeName}LtEqArrayFilter;
+import com.tirion.db.sql.exec.operator.physical.scan.filter.array.${largeTypeName}ArrayFilter.${largeTypeName}NeqArrayFilter;
+import com.tirion.db.sql.exec.operator.physical.scan.filter.buffer.${largeTypeName}BufferFilter.${largeTypeName}BetweenBufferFilter;
+import com.tirion.db.sql.exec.operator.physical.scan.filter.buffer.${largeTypeName}BufferFilter.${largeTypeName}EqBufferFilter;
+import com.tirion.db.sql.exec.operator.physical.scan.filter.buffer.${largeTypeName}BufferFilter.${largeTypeName}GtBufferFilter;
+import com.tirion.db.sql.exec.operator.physical.scan.filter.buffer.${largeTypeName}BufferFilter.${largeTypeName}GtEqBufferFilter;
+import com.tirion.db.sql.exec.operator.physical.scan.filter.buffer.${largeTypeName}BufferFilter.${largeTypeName}InBufferFilter;
+import com.tirion.db.sql.exec.operator.physical.scan.filter.buffer.${largeTypeName}BufferFilter.${largeTypeName}LtBufferFilter;
+import com.tirion.db.sql.exec.operator.physical.scan.filter.buffer.${largeTypeName}BufferFilter.${largeTypeName}LtEqBufferFilter;
+import com.tirion.db.sql.exec.operator.physical.scan.filter.buffer.${largeTypeName}BufferFilter.${largeTypeName}NeqBufferFilter;
+import com.tirion.db.sql.exec.operator.physical.scan.rowid.sink.PageAwareRowIdSink;
+import com.tirion.db.store.page.Page;
+
+public abstract class ${largeTypeName}PageFilter extends AbstractPageFilter {
+
+	public ${largeTypeName}PageFilter(PageAwareRowIdSink rowIdSink, Page page, List<Long> filterRowIds, int position) {
+		super(rowIdSink, page, filterRowIds, position);	
+	}
+	
+	@Override
+	public final void apply() {
+		rowIdSink.before(page);
+		if(filterRowIds != null) {
+			applyFiltered();
+		} else  {
+			applyNonFiltered();
+		}
+		rowIdSink.after(page);
+	}
+	
+	protected abstract void applyNonFiltered();
+	protected abstract void applyFiltered();
+	
+	public static final class ${largeTypeName}InPageFilter extends ${largeTypeName}PageFilter {
+		
+		private final Set<${largeTypeName}> set;
+
+		public ${largeTypeName}InPageFilter(PageAwareRowIdSink rowIdSink, Page page, List<Long> filterRowIds, int position, Set<${largeTypeName}> set) {
+			super(rowIdSink, page, filterRowIds, position);
+			this.set = set;
+		}
+
+		@Override
+		protected void applyNonFiltered() {
+			Object underlying = page.getUnderlying();
+			if(underlying instanceof ByteBuffer) {
+				new ${largeTypeName}InBufferFilter(rowIdSink, page.getStartRowId(), 
+						position, page.getCount(), (ByteBuffer)underlying, set).apply();
+			} else {
+				new ${largeTypeName}InArrayFilter(rowIdSink, page.getStartRowId(), (${smallTypeName}[])underlying, set).apply();
+			}
+		}
+
+		@Override
+		protected void applyFiltered() {
+			List<Object> values = page.getValues(filterRowIds);
+			for (int i = 0; i < values.size(); i++) {
+				final ${largeTypeName} cell = (${largeTypeName}) values.get(i);
+				if(cell != null && set.contains(cell)) {
+					rowIdSink.onRowId(filterRowIds.get(i));
+				}
+			}
+		}
+	}
+	
+	public static final class ${largeTypeName}BetweenPageFilter extends ${largeTypeName}PageFilter {
+
+		private final ${smallTypeName} low;
+		private final ${smallTypeName} high;
+		
+		public ${largeTypeName}BetweenPageFilter(PageAwareRowIdSink rowIdSink, Page page, List<Long> filterRowIds, int position, ${smallTypeName} low, ${smallTypeName} high) {
+			super(rowIdSink, page, filterRowIds, position);
+			this.low = low;
+			this.high = high;
+		}
+
+		@Override
+		protected void applyNonFiltered() {
+			Object underlying = page.getUnderlying();
+			if(underlying instanceof ByteBuffer) {
+				new ${largeTypeName}BetweenBufferFilter(rowIdSink, page.getStartRowId(), 
+						position, page.getCount(), (ByteBuffer)underlying, low, high).apply();
+			} else {
+				new ${largeTypeName}BetweenArrayFilter(rowIdSink, page.getStartRowId(), (${smallTypeName}[])underlying, low, high).apply();
+			}
+		}
+
+		@Override
+		protected void applyFiltered() {
+			List<Object> values = page.getValues(filterRowIds);
+			for (int i = 0; i < values.size(); i++) {
+				final ${largeTypeName} cell = (${largeTypeName}) values.get(i);
+				if(cell != null && (low <= cell.${smallTypeName}Value() && cell.${smallTypeName}Value() <= high)) {
+					rowIdSink.onRowId(filterRowIds.get(i));
+				}
+			}
+		}
+	}
+
+	public static abstract class Simple${largeTypeName}PageFilter extends ${largeTypeName}PageFilter {
+		
+		protected final ${smallTypeName} value;
+		
+		public Simple${largeTypeName}PageFilter(PageAwareRowIdSink rowIdSink, Page page, List<Long> filterRowIds, int position, ${smallTypeName} value) {
+			super(rowIdSink, page, filterRowIds, position);
+			this.value = value;
+		}
+	}
+	
+	public static final class ${largeTypeName}EqPageFilter extends Simple${largeTypeName}PageFilter {
+
+		public ${largeTypeName}EqPageFilter(PageAwareRowIdSink rowIdSink, Page page, List<Long> filterRowIds, int position, ${smallTypeName} value) {
+			super(rowIdSink, page, filterRowIds, position, value);
+		}
+
+		@Override
+		protected void applyNonFiltered() {
+			Object underlying = page.getUnderlying();
+			if(underlying instanceof ByteBuffer) {
+				new ${largeTypeName}EqBufferFilter(rowIdSink, page.getStartRowId(), 
+						position, page.getCount(), (ByteBuffer)underlying, value).apply();
+			} else {
+				new ${largeTypeName}EqArrayFilter(rowIdSink, page.getStartRowId(), (${smallTypeName}[])underlying, value).apply();
+			}
+		}
+		
+		@Override
+		protected void applyFiltered() {			
+			List<Object> values = page.getValues(filterRowIds);
+			for (int i = 0; i < values.size(); i++) {
+				final ${largeTypeName} cell = (${largeTypeName}) values.get(i);
+				if(cell != null && cell.${smallTypeName}Value() == value) {
+					rowIdSink.onRowId(filterRowIds.get(i));
+				}
+			}
+		}
+	}
+	
+	public static final class ${largeTypeName}NeqPageFilter extends Simple${largeTypeName}PageFilter {
+
+		public ${largeTypeName}NeqPageFilter(PageAwareRowIdSink rowIdSink, Page page, List<Long> filterRowIds, int position, ${smallTypeName} value) {
+			super(rowIdSink, page, filterRowIds, position, value);
+		}
+
+		@Override
+		protected void applyNonFiltered() {
+			Object underlying = page.getUnderlying();
+			if(underlying instanceof ByteBuffer) {
+				new ${largeTypeName}NeqBufferFilter(rowIdSink, page.getStartRowId(), 
+						position, page.getCount(), (ByteBuffer)underlying, value).apply();
+			} else {
+				new ${largeTypeName}NeqArrayFilter(
+						rowIdSink, page.getStartRowId(), (${smallTypeName}[])underlying, value).apply();
+			}
+		}
+		
+		@Override
+		protected void applyFiltered() {			
+			List<Object> values = page.getValues(filterRowIds);
+			for (int i = 0; i < values.size(); i++) {
+				final ${largeTypeName} cell = (${largeTypeName}) values.get(i);
+				if(cell != null && cell.${smallTypeName}Value() != value) {
+					rowIdSink.onRowId(filterRowIds.get(i));
+				}
+			}
+		}
+	}
+	
+	public static final class ${largeTypeName}LtPageFilter extends Simple${largeTypeName}PageFilter {
+
+		public ${largeTypeName}LtPageFilter(PageAwareRowIdSink rowIdSink, Page page, List<Long> filterRowIds, int position, ${smallTypeName} value) {
+			super(rowIdSink, page, filterRowIds, position, value);
+		}
+
+		@Override
+		protected void applyNonFiltered() {
+			Object underlying = page.getUnderlying();
+			if(underlying instanceof ByteBuffer) {
+				new ${largeTypeName}LtBufferFilter(rowIdSink, page.getStartRowId(), 
+						position, page.getCount(), (ByteBuffer)underlying, value).apply();
+			} else {
+				new ${largeTypeName}LtArrayFilter(
+						rowIdSink, page.getStartRowId(), (${smallTypeName}[])underlying, value).apply();
+			}
+		}
+		
+		@Override
+		protected void applyFiltered() {			
+			List<Object> values = page.getValues(filterRowIds);
+			for (int i = 0; i < values.size(); i++) {
+				final ${largeTypeName} cell = (${largeTypeName}) values.get(i);
+				if(cell != null && cell.${smallTypeName}Value() < value) {
+					rowIdSink.onRowId(filterRowIds.get(i));
+				}
+			}
+		}
+	}
+	
+	public static final class ${largeTypeName}LtEqPageFilter extends Simple${largeTypeName}PageFilter {
+
+		public ${largeTypeName}LtEqPageFilter(PageAwareRowIdSink rowIdSink, Page page, List<Long> filterRowIds, int position, ${smallTypeName} value) {
+			super(rowIdSink, page, filterRowIds, position, value);
+		}
+
+		@Override
+		protected void applyNonFiltered() {
+			Object underlying = page.getUnderlying();
+			if(underlying instanceof ByteBuffer) {
+				new ${largeTypeName}LtEqBufferFilter(rowIdSink, page.getStartRowId(), 
+						position, page.getCount(), (ByteBuffer)underlying, value).apply();
+			} else {
+				new ${largeTypeName}LtEqArrayFilter(
+						rowIdSink, page.getStartRowId(), (${smallTypeName}[])underlying, value).apply();
+			}
+		}
+		
+		@Override
+		protected void applyFiltered() {			
+			List<Object> values = page.getValues(filterRowIds);
+			for (int i = 0; i < values.size(); i++) {
+				final ${largeTypeName} cell = (${largeTypeName}) values.get(i);
+				if(cell != null && cell.${smallTypeName}Value() <= value) {
+					rowIdSink.onRowId(filterRowIds.get(i));
+				}
+			}
+		}
+	}
+	
+	public static final class ${largeTypeName}GtPageFilter extends Simple${largeTypeName}PageFilter {
+
+		public ${largeTypeName}GtPageFilter(PageAwareRowIdSink rowIdSink, Page page, List<Long> filterRowIds, int position, ${smallTypeName} value) {
+			super(rowIdSink, page, filterRowIds, position, value);
+		}
+
+		@Override
+		protected void applyNonFiltered() {
+			Object underlying = page.getUnderlying();
+			if(underlying instanceof ByteBuffer) {
+				new ${largeTypeName}GtBufferFilter(rowIdSink, page.getStartRowId(), 
+						position, page.getCount(), (ByteBuffer)underlying, value).apply();
+			} else {
+				new ${largeTypeName}GtArrayFilter(
+						rowIdSink, page.getStartRowId(), (${smallTypeName}[])underlying, value).apply();
+			}
+		}
+		
+		@Override
+		protected void applyFiltered() {			
+			List<Object> values = page.getValues(filterRowIds);
+			for (int i = 0; i < values.size(); i++) {
+				final ${largeTypeName} cell = (${largeTypeName}) values.get(i);
+				if(cell != null && cell.${smallTypeName}Value() > value) {
+					rowIdSink.onRowId(filterRowIds.get(i));
+				}
+			}
+		}
+	}
+	
+	public static final class ${largeTypeName}GtEqPageFilter extends Simple${largeTypeName}PageFilter {
+
+		public ${largeTypeName}GtEqPageFilter(PageAwareRowIdSink rowIdSink, Page page, List<Long> filterRowIds, int position, ${smallTypeName} value) {
+			super(rowIdSink, page, filterRowIds, position, value);
+		}
+
+		@Override
+		protected void applyNonFiltered() {
+			Object underlying = page.getUnderlying();
+			if(underlying instanceof ByteBuffer) {
+				new ${largeTypeName}GtEqBufferFilter(rowIdSink, page.getStartRowId(), 
+						position, page.getCount(), (ByteBuffer)underlying, value).apply();
+			} else {
+				new ${largeTypeName}GtEqArrayFilter(
+						rowIdSink, page.getStartRowId(), (${smallTypeName}[])underlying, value).apply();
+			}
+		}
+		
+		@Override
+		protected void applyFiltered() {			
+			List<Object> values = page.getValues(filterRowIds);
+			for (int i = 0; i < values.size(); i++) {
+				final ${largeTypeName} cell = (${largeTypeName}) values.get(i);
+				if(cell != null && cell.${smallTypeName}Value() >= value) {
+					rowIdSink.onRowId(filterRowIds.get(i));
+				}
+			}
+		}
+	}
+}

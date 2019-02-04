@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+	
+	<bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="location">
+			<value>tirion-db.properties</value>
+		</property>
+	</bean>
+	
+	<bean id="configuration" class="com.tirion.db.common.runtime.SimpleConfiguration">
+		<constructor-arg>
+			<value>${bitmap.min.page.count.and}</value>
+		</constructor-arg>
+		<constructor-arg>
+			<value>${bitmap.min.page.count.or}</value>
+		</constructor-arg>
+		<constructor-arg>
+			<value>${bitmap.min.page.count.rowid.projection}</value>
+		</constructor-arg>
+		<constructor-arg>
+			<value>${tuple.projector.min.rowid.count}</value>
+		</constructor-arg>
+		<constructor-arg>
+			<value>${tuple.projector.batch.size}</value>
+		</constructor-arg>
+		<constructor-arg>
+			<value>${scan.operator.unconsumed.tuples}</value>
+		</constructor-arg>		
+		<constructor-arg>
+			<value>${group.parallel.buckets}</value>
+		</constructor-arg>
+	</bean>
+
+	<bean id="runtime" class="com.tirion.db.common.runtime.SimpleRuntime">
+		<property name="store" ref="store" />
+		<property name="catalog" ref="catalog" />
+		<property name="compressor" ref="compressor" />
+		<property name="parser" ref="parser" />
+		<property name="planner" ref="planner" />
+		<property name="engine" ref="engine" />
+		<property name="allocator" ref="allocator" />
+		<property name="executor" ref="executor" />
+		<property name="fileLoader" ref="fileLoader" />
+		<property name="tableLoader" ref="tableLoader" />
+		<property name="pool" ref="pool" />
+		<property name="compiler" ref="compiler" />
+		<property name="locker" ref="locker" />
+		<property name="configuration" ref="configuration" />
+		<property name="txManager" ref="txManager" />
+	</bean>	
+
+	<bean id="txManager" class="com.tirion.db.tx.SimpleTxManager" init-method="init" destroy-method="shutdown">
+	</bean>	
+
+	<bean id="locker" class="com.tirion.db.lock.SimpleLocker" init-method="init" destroy-method="shutdown">
+	</bean>	
+
+	<bean id="catalog" class="com.tirion.db.catalog.inmemory.InMemoryCatalog" init-method="init" destroy-method="shutdown">
+	</bean>
+
+	<bean id="store" class="com.tirion.db.store.InMemoryStore" init-method="init" destroy-method="shutdown">
+		<property name="runtime" ref="runtime" />
+	</bean>
+	
+	<bean id="compressor" class="com.tirion.compessor.SnappyCompressor" init-method="init" destroy-method="shutdown">
+		<property name="goodCompressionRatio" value="${compressor.good.compression.ratio}" />
+	</bean>		
+	
+	<bean id="executor" class="com.tirion.executor.SimpleExecutor" init-method="init" destroy-method="shutdown">
+		<property name="poolScaleFactor" value="${thread.pool.scale.factor}" />
+	</bean>	
+	
+	<bean id="tableLoader" class="com.tirion.db.store.loader.ParallelTableLoader" init-method="init" destroy-method="shutdown">
+		<property name="runtime" ref="runtime" />
+	</bean>
+	
+	<bean id="fileLoader" class="com.tirion.db.loader.SimpleFileLoader" init-method="init" destroy-method="shutdown">
+		<property name="pool" ref="pool" />
+	</bean>
+	
+	<bean id="planner" class="com.tirion.db.sql.planner.MainPlanner" init-method="init" destroy-method="shutdown">
+		<property name="runtime" ref="runtime" />
+	</bean>
+	
+	<bean id="allocator" class="com.tirion.db.store.storage.DirectHeapStoragePool" init-method="init" destroy-method="shutdown">
+	</bean>
+	<!--  
+	<bean id="allocator" class="com.tirion.db.store.storage.FixedSizeStoragePool" init-method="init" destroy-method="shutdown">
+		<property name="rootDir" value="${mmf.root.dir}" />
+		<property name="fileCount" value="${mmf.file.count}" />
+		<property name="fileSize" value="${mmf.file.size}" />
+		<property name="deleteOnExit" value="${mmf.delete.on.exit}" />
+	</bean>
+	-->
+	
+	<bean id="parser" class="com.tirion.db.sql.parser.SimpleParser" init-method="init" destroy-method="shutdown">
+	</bean>
+	
+	<bean id="engine" class="com.tirion.db.engine.PseudoEngine" init-method="init" destroy-method="shutdown">
+		<property name="runtime" ref="runtime" />
+		<property name="workDir" value="${work.dir}" />
+	</bean>
+	
+	<bean id="pool" class="com.tirion.pool.SimplePool" init-method="init" destroy-method="shutdown">
+	</bean>
+	
+	<!--  
+	<bean id="profiler" class="com.tirion.profiler.SimpleProfiler" init-method="init" destroy-method="shutdown">
+		<property name="catalog" ref="catalog" />
+		<property name="compiler" ref="compiler" />
+		<property name="store" ref="store" />
+		<property name="engine" ref="engine" />
+		<property name="pool" ref="pool" />
+		<property name="metricsFrequency" value="${metrics.report.frequency}" />
+		<property name="metricsDirectory" value="${metrics.report.dir}" />
+	</bean>
+	-->
+	
+	<bean id="compiler" class="com.tirion.generator.compiler.JdkCompiler" init-method="init" destroy-method="shutdown">
+		<property name="inputDir" value="${compiler.src.dir}" />
+		<property name="outputDir" value="${compiler.bin.dir}" />
+		<property name="cleanOnStart" value="${compiler.clean.on.start}" />
+	</bean>
+	
+	<bean id="shell" class="com.tirion.db.shell.TelnetShell" init-method="init" destroy-method="shutdown">
+		<property name="port" value="${telnet.server.port}" />
+		<property name="runtime" ref="runtime" />
+	</bean>
+	
+	<bean id="webServer" class="com.tirion.db.web.JettyWebServer" init-method="init" destroy-method="shutdown">
+		<property name="profiler" ref="profiler" />
+		<property name="port" value="${web.server.port}" />
+	</bean>
+	
+	
+	<bean id="rmiServer" class="com.tirion.db.jdbc.server.SimpleRmiServer" init-method="init" destroy-method="shutdown">
+		<property name="engine" ref="engine" />
+		<property name="port" value="${jdbc.server.port}" />
+	</bean>
+</beans>
+

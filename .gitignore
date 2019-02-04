@@ -1,0 +1,8 @@
+target/
+*.class
+velocity.log
+
+# Package Files #
+*.jar
+*.war
+*.ear

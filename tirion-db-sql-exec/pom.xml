@@ -1,0 +1,68 @@
+<!--
+
+    Copyright © 2013/2014, Veljko Zivkovic
+    All rights reserved.
+
+    No portion of this file may be reproduced in any form, or by any means, without the prior written
+    consent of the author.
+
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>com.tirion</groupId>
+		<artifactId>tirion</artifactId>
+		<version>0.0.1-SNAPSHOT</version>
+	</parent>
+	<groupId>com.tirion.db.sql.exec</groupId>
+	<artifactId>tirion-db-sql-exec</artifactId>
+	<version>1.0-SNAPSHOT</version>
+	<dependencies>
+		<dependency>
+			<groupId>com.tirion.common</groupId>
+			<artifactId>tirion-common</artifactId>
+			<version>1.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>com.tirion.db.common</groupId>
+			<artifactId>tirion-db-common</artifactId>
+			<version>1.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>com.tirion.compressor</groupId>
+			<artifactId>tirion-compressor</artifactId>
+			<version>1.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>com.tirion.compiler</groupId>
+			<artifactId>tirion-compiler</artifactId>
+			<version>1.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>com.tirion.db.catalog</groupId>
+			<artifactId>tirion-db-catalog</artifactId>
+			<version>1.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>com.tirion.stats</groupId>
+			<artifactId>tirion-stats</artifactId>
+			<version>1.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>com.tirion.db.store</groupId>
+			<artifactId>tirion-db-store</artifactId>
+			<version>1.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>com.tirion.pool</groupId>
+			<artifactId>tirion-pool</artifactId>
+			<version>1.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>org.codehaus.jackson</groupId>
+			<artifactId>jackson-mapper-asl</artifactId>
+			<version>1.9.12</version>
+		</dependency>
+	</dependencies>
+</project>

@@ -1,0 +1,23 @@
+@echo off
+
+md logs
+md logs\metrics
+md work\
+md work\pool
+md work\compiler
+md work\compiler\src
+md work\compiler\bin
+
+setLocal EnableDelayedExpansion
+set CLASSPATH="
+for /R lib %%a in (*.jar) do (
+	set CLASSPATH=!CLASSPATH!;%%a
+)
+set CLASSPATH=!CLASSPATH!;conf
+for /R conf %%a in (*.properties) do (
+	set CLASSPATH=!CLASSPATH!;%%a
+)
+set CLASSPATH=!CLASSPATH!"
+echo !CLASSPATH!
+
+java -Dlog4j.configuration=log4j.properties -server -XX:MaxDirectMemorySize=512M -XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+AggressiveOpts -XX:+UseFastAccessorMethods -Xms3000M -Xmx3000M com.tirion.db.TirionDbMain
