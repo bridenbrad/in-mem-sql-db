@@ -11,7 +11,7 @@ Features:
 * BitMap, MinMax Indexing
 * Tokenization, Paging, Append-Only
 
-Written back in 2013/2014. Worked on Amazon EC2 with 60 million rows at millisecond latency.
+Written back in 2013/2014. Worked on Amazon EC2 with 60 million rows at millisecond latency. Not complete.
 
 Some packages of interest:
 * tirion-db-store/src/main/java/com/tirion/db/store/page
